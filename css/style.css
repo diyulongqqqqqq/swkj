@@ -678,6 +678,10 @@ main {
     margin: 0 auto;
     max-width: 100%;
     resize: vertical; /* 允许垂直调整大小 */
+    padding: 0;
+    min-height: 400px;
+    transition: all var(--transition-normal);
+    scroll-behavior: smooth; /* 添加平滑滚动 */
 }
 
 .viewer-container iframe {
@@ -685,6 +689,30 @@ main {
     height: 500px; /* 缩小iframe高度，与容器匹配 */
     border: none;
     display: block;
+    transition: all var(--transition-normal);
+    transform-origin: center;
+    image-rendering: auto;
+    image-rendering: crisp-edges;
+    image-rendering: pixelated;
+    zoom: 1;
+}
+
+/* 优化Office Online嵌入内容的显示 */
+.viewer-container iframe[src*="officeapps.live.com"] {
+    min-height: 500px;
+    height: 100%;
+    width: 100%;
+    max-width: 100%;
+    border: none;
+    background: white;
+}
+
+/* 优化文档查看器区域 */
+.document-viewer {
+    margin: 1.5rem 0;
+    position: relative;
+    min-height: 500px;
+    width: 100%;
 }
 
 /* 查看器控制按钮 */

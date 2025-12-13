@@ -90,21 +90,24 @@ class DocumentDetailView {
         
         // 根据文件类型显示不同的查看器
         if (this.document.type === 'ppt') {
+            // PPT优化：添加wdSlideId和wdArrows=true参数，提高清晰度
             viewerContent.innerHTML = `
                 <div class="viewer-container">
-                    <iframe src="https://view.officeapps.live.com/op/embed.aspx?src=${encodeURIComponent(window.location.origin + '/' + this.document.filePath)}&amp;wdSlideId=256"></iframe>
+                    <iframe src="https://view.officeapps.live.com/op/embed.aspx?src=${encodeURIComponent(window.location.origin + '/' + this.document.filePath)}&amp;wdArrows=true&amp;wdScroll=true&amp;wdEmbedCodeType=OfficeOnline"></iframe>
                 </div>
             `;
         } else if (this.document.type === 'word') {
+            // Word优化：添加wdScroll=true参数，提高清晰度
             viewerContent.innerHTML = `
                 <div class="viewer-container">
-                    <iframe src="https://view.officeapps.live.com/op/embed.aspx?src=${encodeURIComponent(window.location.origin + '/' + this.document.filePath)}"></iframe>
+                    <iframe src="https://view.officeapps.live.com/op/embed.aspx?src=${encodeURIComponent(window.location.origin + '/' + this.document.filePath)}&amp;wdScroll=true&amp;wdEmbedCodeType=OfficeOnline"></iframe>
                 </div>
             `;
         } else if (this.document.type === 'excel') {
+            // Excel优化：添加wdInConfigurator=true和wdScroll=true参数，提高清晰度
             viewerContent.innerHTML = `
                 <div class="viewer-container">
-                    <iframe src="https://view.officeapps.live.com/op/embed.aspx?src=${encodeURIComponent(window.location.origin + '/' + this.document.filePath)}"></iframe>
+                    <iframe src="https://view.officeapps.live.com/op/embed.aspx?src=${encodeURIComponent(window.location.origin + '/' + this.document.filePath)}&amp;wdInConfigurator=true&amp;wdScroll=true&amp;wdEmbedCodeType=OfficeOnline"></iframe>
                 </div>
             `;
         } else if (this.document.type === 'pdf') {
