@@ -92,7 +92,7 @@ class DocumentDetailView {
         if (this.document.type === 'ppt') {
             viewerContent.innerHTML = `
                 <div class="viewer-container">
-                    <iframe src="https://view.officeapps.live.com/op/embed.aspx?src=${encodeURIComponent(window.location.origin + '/' + this.document.filePath)}&amp;wdSlideId=256" style="width:100%;height:600px;border:none;"></iframe>
+                    <iframe src="https://view.officeapps.live.com/op/embed.aspx?src=${encodeURIComponent(window.location.origin + '/' + this.document.filePath)}&amp;wdSlideId=256"></iframe>
                 </div>
             `;
         } else if (this.document.type === 'word') {
@@ -110,7 +110,7 @@ class DocumentDetailView {
         } else if (this.document.type === 'pdf') {
             viewerContent.innerHTML = `
                 <div class="viewer-container">
-                    <iframe id="pdfViewer" src="${window.location.origin}/${this.document.filePath}" style="width:100%;height:600px;border:none;" allowfullscreen></iframe>
+                    <iframe id="pdfViewer" src="${window.location.origin}/${this.document.filePath}" allowfullscreen></iframe>
                     <div class="viewer-controls">
                     <button class="btn-secondary" id="fullscreenBtn">
                         <i class="fas fa-expand"></i> 全屏查看
