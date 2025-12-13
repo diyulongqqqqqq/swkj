@@ -1,0 +1,947 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>完整PDF查看器</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background-color: #f5f5f5;
+            color: #333;
+            line-height: 1.6;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 2rem;
+            border-radius: 10px;
+            margin-bottom: 2rem;
+            text-align: center;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+
+        header h1 {
+            font-size: 2.5rem;
+            margin-bottom: 0.5rem;
+        }
+
+        header p {
+            font-size: 1.1rem;
+            opacity: 0.9;
+        }
+
+        main {
+            background: white;
+            padding: 2rem;
+            border-radius: 10px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+
+        .upload-section {
+            margin-bottom: 2rem;
+            text-align: center;
+        }
+
+        #fileInput {
+            display: none;
+        }
+
+        .upload-btn {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 12px 30px;
+            border-radius: 30px;
+            font-size: 1rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+        }
+
+        .upload-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(0, 0, 0, 0.15);
+        }
+
+        .file-info {
+            margin-top: 1rem;
+            font-size: 0.9rem;
+            color: #666;
+        }
+
+        .pdf-viewer {
+            margin-top: 2rem;
+        }
+
+        .pdf-controls {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 1rem;
+            margin-bottom: 1rem;
+            padding: 1rem;
+            background: #f9fafb;
+            border-radius: 8px;
+            border: 1px solid #e5e7eb;
+            flex-wrap: wrap;
+        }
+
+        .control-btn {
+            background: #667eea;
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-size: 0.9rem;
+        }
+
+        .control-btn:hover {
+            background: #764ba2;
+            transform: translateY(-1px);
+        }
+
+        .control-btn:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .page-info {
+            font-weight: 500;
+            color: #666;
+            min-width: 150px;
+            text-align: center;
+        }
+
+        .zoom-controls {
+            display: flex;
+            gap: 0.5rem;
+            align-items: center;
+        }
+
+        .zoom-level {
+            min-width: 60px;
+            text-align: center;
+            font-weight: 500;
+            color: #666;
+        }
+
+        .canvas-container {
+            display: flex;
+            justify-content: center;
+            align-items: flex-start;
+            min-height: 500px;
+            background: white;
+            border: 1px solid #e5e7eb;
+            border-radius: 8px;
+            overflow: auto;
+            padding: 1rem;
+            position: relative;
+        }
+
+        .pdf-page {
+            margin-bottom: 1rem;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+            border-radius: 4px;
+            background: white;
+        }
+
+        #pdfContainer {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            width: 100%;
+        }
+
+        .loading {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 300px;
+            color: #666;
+        }
+
+        .spinner {
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #667eea;
+            border-radius: 50%;
+            width: 50px;
+            height: 50px;
+            animation: spin 1s linear infinite;
+            margin-bottom: 1rem;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .error {
+            background: #ffebee;
+            color: #c62828;
+            padding: 1rem;
+            border-radius: 8px;
+            margin: 1rem 0;
+            text-align: center;
+            border-left: 5px solid #c62828;
+        }
+
+        @media (max-width: 768px) {
+            .container {
+                padding: 10px;
+            }
+
+            header {
+                padding: 1.5rem;
+            }
+
+            header h1 {
+                font-size: 2rem;
+            }
+
+            main {
+                padding: 1.5rem;
+            }
+
+            .pdf-controls {
+                flex-wrap: wrap;
+                gap: 0.75rem;
+            }
+        }
+    </style>
+    <!-- 引入pdf.js库 -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.4.120/pdf.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.4.120/pdf.worker.min.js"></script>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>📄 完整PDF查看器</h1>
+            <p>基于pdf.js的专业PDF文件查看器</p>
+        </header>
+
+        <main>
+            <!-- 文件上传区域 -->
+            <section class="upload-section">
+                <button class="upload-btn" onclick="document.getElementById('fileInput').click()">
+                    📁 选择PDF文件
+                </button>
+                <input type="file" id="fileInput" accept=".pdf" style="display: none;">
+                <div class="file-info" id="fileInfo">支持 .pdf 格式文件</div>
+            </section>
+
+            <!-- PDF查看区域 -->
+            <section class="pdf-viewer" id="pdfViewer" style="display: none;">
+                <!-- 控制按钮 -->
+                <div class="pdf-controls">
+                    <!-- 页面导航 -->
+                    <button class="control-btn" id="prevPage" onclick="previousPage()">
+                        ← 上一页
+                    </button>
+                    
+                    <!-- 页码跳转 -->
+                    <div class="page-nav">
+                        <span>第</span>
+                        <input type="number" id="pageInput" min="1" max="1" value="1" onchange="goToPage()" style="width: 60px; padding: 4px; margin: 0 5px; border: 1px solid #ddd; border-radius: 4px;">
+                        <span>页，共 <span id="totalPages">1</span> 页</span>
+                    </div>
+                    
+                    <button class="control-btn" id="nextPage" onclick="nextPage()">
+                        下一页 →
+                    </button>
+                    
+                    <!-- 搜索功能 -->
+                    <div class="search-controls">
+                        <input type="text" id="searchInput" placeholder="搜索文本..." onkeyup="searchText(event)" style="padding: 6px; border: 1px solid #ddd; border-radius: 4px; margin-right: 5px;">
+                        <button class="control-btn" onclick="searchText()" style="padding: 6px 12px; font-size: 0.85rem;">
+                            🔍 搜索
+                        </button>
+                    </div>
+                    
+                    <!-- 缩放控制 -->
+                    <div class="zoom-controls">
+                        <button class="control-btn" id="zoomOut" onclick="zoomOut()">
+                            🔍 缩小
+                        </button>
+                        <span class="zoom-level">
+                            <span id="zoomLevel">100</span>%
+                        </span>
+                        <button class="control-btn" id="zoomIn" onclick="zoomIn()">
+                            🔍 放大
+                        </button>
+                        <button class="control-btn" id="resetZoom" onclick="resetZoom()">
+                            🔄 重置
+                        </button>
+                    </div>
+                    
+                    <!-- 其他功能 -->
+                    <button class="control-btn" id="rotateLeft" onclick="rotate(-90)">
+                        ↻ 向左旋转
+                    </button>
+                    <button class="control-btn" id="rotateRight" onclick="rotate(90)">
+                        ↺ 向右旋转
+                    </button>
+                    <button class="control-btn" id="fullscreenBtn" onclick="toggleFullscreen()">
+                        🖥️ 全屏
+                    </button>
+                    <button class="control-btn" id="downloadBtn" onclick="downloadPDF()">
+                        💾 下载
+                    </button>
+                </div>
+                
+                <!-- 搜索结果显示 -->
+                <div id="searchResults" style="margin: 1rem 0; padding: 0.75rem; background: #f0f9ff; border: 1px solid #bfdbfe; border-radius: 6px; display: none;">
+                    <span id="searchCount" style="font-weight: 500; color: #1e40af;"></span>
+                    <div style="display: flex; gap: 0.5rem; margin-top: 0.5rem;">
+                        <button class="control-btn" id="prevMatch" onclick="previousMatch()" style="padding: 4px 10px; font-size: 0.85rem;">
+                            ← 上一个
+                        </button>
+                        <button class="control-btn" id="nextMatch" onclick="nextMatch()" style="padding: 4px 10px; font-size: 0.85rem;">
+                            下一个 →
+                        </button>
+                        <button class="control-btn" id="clearSearch" onclick="clearSearch()" style="padding: 4px 10px; font-size: 0.85rem;">
+                            清除
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Canvas容器 -->
+                <div class="canvas-container">
+                    <div id="pdfContainer"></div>
+                </div>
+            </section>
+
+            <!-- 加载状态 -->
+            <div class="loading" id="loading" style="display: none;">
+                <div class="spinner"></div>
+                <p>正在加载PDF文件...</p>
+            </div>
+
+            <!-- 错误提示 -->
+            <div class="error" id="error" style="display: none;"></div>
+        </main>
+    </div>
+
+    <script>
+        // 全局变量
+        let pdfDoc = null;
+        let currentPage = 1;
+        let totalPages = 1;
+        let zoomLevel = 1.5; // 提高默认缩放级别，获得更高清晰度
+        let rotation = 0;
+        let pdfFile = null;
+        let pdfUrl = null;
+        
+        // 搜索相关变量
+        let searchResults = [];
+        let currentSearchIndex = -1;
+        let searchTextValue = '';
+        
+        // DOM元素 - 初始化为null，将在init函数中获取
+        let fileInput = null;
+        let fileInfo = null;
+        let pdfViewer = null;
+        let pdfContainer = null;
+        let loading = null;
+        let error = null;
+        let currentPageEl = null;
+        let totalPagesEl = null;
+        let zoomLevelEl = null;
+        let prevPageBtn = null;
+        let nextPageBtn = null;
+        let downloadBtn = null;
+        let pageInput = null;
+        let searchInput = null;
+        let searchResultsEl = null;
+        let searchCountEl = null;
+        let prevMatchBtn = null;
+        let nextMatchBtn = null;
+        let clearSearchBtn = null;
+        let fullscreenBtn = null;
+        
+        // 设置pdf.js worker路径
+        pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.4.120/pdf.worker.min.js';
+
+        // 初始化事件监听
+        function init() {
+            // 获取DOM元素
+            fileInput = document.getElementById('fileInput');
+            fileInfo = document.getElementById('fileInfo');
+            pdfViewer = document.getElementById('pdfViewer');
+            pdfContainer = document.getElementById('pdfContainer');
+            loading = document.getElementById('loading');
+            error = document.getElementById('error');
+            currentPageEl = document.getElementById('currentPage');
+            totalPagesEl = document.getElementById('totalPages');
+            zoomLevelEl = document.getElementById('zoomLevel');
+            prevPageBtn = document.getElementById('prevPage');
+            nextPageBtn = document.getElementById('nextPage');
+            downloadBtn = document.getElementById('downloadBtn');
+            pageInput = document.getElementById('pageInput');
+            searchInput = document.getElementById('searchInput');
+            searchResultsEl = document.getElementById('searchResults');
+            searchCountEl = document.getElementById('searchCount');
+            prevMatchBtn = document.getElementById('prevMatch');
+            nextMatchBtn = document.getElementById('nextMatch');
+            clearSearchBtn = document.getElementById('clearSearch');
+            fullscreenBtn = document.getElementById('fullscreenBtn');
+            
+            fileInput.addEventListener('change', handleFileSelect);
+            
+            // 初始化滚动事件监听，用于动态加载可见页面
+            initScrollListener();
+            
+            // 检查URL参数
+            const urlParams = new URLSearchParams(window.location.search);
+            const fileUrl = urlParams.get('file');
+            if (fileUrl) {
+                loadPDFFromServer(fileUrl);
+            }
+        }
+
+        // 处理文件选择
+        function handleFileSelect(event) {
+            const file = event.target.files[0];
+            if (file) {
+                if (file.type !== 'application/pdf') {
+                    showError('请选择PDF格式的文件');
+                    return;
+                }
+                
+                pdfFile = file;
+                pdfUrl = URL.createObjectURL(file);
+                if (fileInfo) {
+                    fileInfo.textContent = `已选择: ${file.name} (${formatFileSize(file.size)})`;
+                }
+                loadPDF(pdfUrl);
+            }
+        }
+
+        // 从服务器加载PDF文件
+        function loadPDFFromServer(fileUrl) {
+            showLoading();
+            hideError();
+            
+            pdfUrl = fileUrl;
+            const fileName = decodeURIComponent(fileUrl.split('/').pop());
+            if (fileInfo) {
+                fileInfo.textContent = `已选择: ${fileName}`;
+            }
+            
+            // 创建虚拟文件对象
+            pdfFile = {
+                name: fileName,
+                size: 0
+            };
+            
+            loadPDF(fileUrl);
+        }
+
+        // 加载PDF文件
+        function loadPDF(url) {
+            showLoading();
+            hideError();
+            
+            // 清除之前的内容
+            pdfContainer.innerHTML = '';
+            
+            // 使用pdf.js加载PDF文件，设置初始加载选项（移除可能导致错误的cmap配置）
+            pdfjsLib.getDocument({
+                url: url,
+                disableFontFace: false, // 保持字体渲染质量
+                maxImageSize: 1024 * 1024 * 5 // 限制图像大小，提高加载速度
+            }).promise.then(function(pdf) {
+                pdfDoc = pdf;
+                totalPages = pdf.numPages;
+                currentPage = 1;
+                rotation = 0;
+                updatePageInfo();
+                
+                // 分批次渲染所有页面，确保后面的页面也能加载
+                renderAllPagesInBatches();
+                
+                pdfViewer.style.display = 'block';
+                hideLoading();
+            }).catch(function(error) {
+                showError('PDF文件加载失败: ' + error.message);
+                hideLoading();
+            });
+        }
+
+        // 分批次渲染所有页面，确保后面的页面也能加载
+        function renderAllPagesInBatches() {
+            // 首先创建所有canvas占位符
+            for (let pageNum = 1; pageNum <= totalPages; pageNum++) {
+                const canvas = document.createElement('canvas');
+                canvas.className = 'pdf-page';
+                canvas.dataset.pageNum = pageNum;
+                
+                // 设置标准PDF尺寸占位
+                const placeholderHeight = 792 * zoomLevel;
+                const placeholderWidth = 612 * zoomLevel;
+                canvas.style.height = placeholderHeight + 'px';
+                canvas.style.width = placeholderWidth + 'px';
+                
+                // 添加加载状态
+                const loadingDiv = document.createElement('div');
+                loadingDiv.className = 'page-loading';
+                loadingDiv.style.position = 'absolute';
+                loadingDiv.style.top = '50%';
+                loadingDiv.style.left = '50%';
+                loadingDiv.style.transform = 'translate(-50%, -50%)';
+                loadingDiv.style.color = '#667eea';
+                loadingDiv.style.fontSize = '14px';
+                loadingDiv.textContent = `加载中...`;
+                canvas.style.position = 'relative';
+                canvas.appendChild(loadingDiv);
+                
+                pdfContainer.appendChild(canvas);
+            }
+            
+            // 分批次渲染页面，每批渲染5页，避免阻塞主线程
+            const batchSize = 5;
+            let currentBatch = 0;
+            
+            function renderNextBatch() {
+                const startPage = currentBatch * batchSize + 1;
+                const endPage = Math.min(totalPages, (currentBatch + 1) * batchSize);
+                
+                if (startPage > totalPages) {
+                    return; // 所有页面都已渲染
+                }
+                
+                // 渲染当前批次的页面
+                for (let pageNum = startPage; pageNum <= endPage; pageNum++) {
+                    renderPage(pageNum);
+                }
+                
+                currentBatch++;
+                
+                // 延迟渲染下一批，避免阻塞主线程
+                setTimeout(renderNextBatch, 300);
+            }
+            
+            // 开始渲染
+            renderNextBatch();
+        }
+
+        // 渲染单页（优化清晰度）
+        function renderPage(pageNum) {
+            // 获取对应的canvas元素
+            const canvas = pdfContainer.querySelector(`[data-page-num="${pageNum}"]`);
+            if (!canvas || !pdfDoc) return;
+            
+            pdfDoc.getPage(pageNum).then(function(page) {
+                // 获取设备像素比，提高高清屏幕上的渲染质量
+                const devicePixelRatio = window.devicePixelRatio || 1;
+                const backingStoreRatio = canvas.webkitBackingStorePixelRatio || canvas.mozBackingStorePixelRatio || canvas.msBackingStorePixelRatio || canvas.oBackingStorePixelRatio || canvas.backingStorePixelRatio || 1;
+                const ratio = devicePixelRatio / backingStoreRatio;
+                
+                // 设置页面视口，使用更高质量的渲染选项
+                const viewport = page.getViewport({
+                    scale: zoomLevel,
+                    rotation: rotation
+                });
+                
+                // 设置Canvas尺寸，考虑设备像素比
+                const context = canvas.getContext('2d');
+                
+                // 实际显示尺寸
+                canvas.style.width = viewport.width + 'px';
+                canvas.style.height = viewport.height + 'px';
+                
+                // 内部渲染尺寸（考虑设备像素比，提高清晰度）
+                canvas.width = viewport.width * ratio * 1.2; // 增加1.2倍渲染分辨率
+                canvas.height = viewport.height * ratio * 1.2;
+                
+                // 缩放上下文以匹配设备像素比
+                context.scale(ratio * 1.2, ratio * 1.2);
+                
+                // 渲染页面，平衡质量和速度
+                const renderContext = {
+                    canvasContext: context,
+                    viewport: viewport,
+                    intent: "display",
+                    enableWebGL: false, // 禁用WebGL，避免渲染问题
+                    textRenderingMode: "optimizeLegibility", // 恢复优化可读性，提高清晰度
+                    renderInteractiveForms: true, // 启用表单渲染
+                    optimizeForSpeed: false // 优先考虑质量
+                };
+                
+                page.render(renderContext).promise.then(function() {
+                    // 渲染完成后，移除加载状态
+                    const loadingDiv = canvas.querySelector('.page-loading');
+                    if (loadingDiv) {
+                        loadingDiv.remove();
+                    }
+                });
+            }).catch(function(error) {
+                // 渲染失败时，显示错误信息
+                const loadingDiv = canvas.querySelector('.page-loading');
+                if (loadingDiv) {
+                    loadingDiv.textContent = `加载失败: ${error.message}`;
+                    loadingDiv.style.color = '#ef4444';
+                }
+            });
+        }
+        
+        // 简化的滚动监听函数，只用于更新当前页面信息
+        function initScrollListener() {
+            const container = document.querySelector('.canvas-container');
+            if (container) {
+                container.addEventListener('scroll', debounce(function() {
+                    // 只更新当前页面信息，不重新渲染
+                    const visiblePage = getVisiblePage();
+                    if (visiblePage && visiblePage !== currentPage) {
+                        currentPage = visiblePage;
+                        updatePageInfo();
+                    }
+                }, 300));
+            }
+        }
+        
+        // 获取当前可见页面
+        function getVisiblePage() {
+            const container = document.querySelector('.canvas-container');
+            if (!container) return currentPage;
+            
+            const containerRect = container.getBoundingClientRect();
+            const pages = document.querySelectorAll('.pdf-page');
+            
+            // 遍历所有页面，找到可见度最高的页面
+            let maxVisibility = 0;
+            let visiblePage = currentPage;
+            
+            for (let i = 0; i < pages.length; i++) {
+                const page = pages[i];
+                const pageRect = page.getBoundingClientRect();
+                
+                // 计算页面可见比例
+                const overlapHeight = Math.max(0, Math.min(pageRect.bottom, containerRect.bottom) - Math.max(pageRect.top, containerRect.top));
+                const visibilityRatio = overlapHeight / pageRect.height;
+                
+                // 如果页面有可见部分，更新可见页面
+                if (visibilityRatio > 0.1) { // 只要有10%可见就认为是可见页面
+                    if (visibilityRatio > maxVisibility) {
+                        maxVisibility = visibilityRatio;
+                        visiblePage = parseInt(page.dataset.pageNum);
+                    }
+                }
+            }
+            
+            return visiblePage;
+        }
+        
+        // 防抖函数，减少滚动事件触发频率
+        function debounce(func, wait) {
+            let timeout;
+            return function executedFunction(...args) {
+                const later = () => {
+                    clearTimeout(timeout);
+                    func(...args);
+                };
+                clearTimeout(timeout);
+                timeout = setTimeout(later, wait);
+            };
+        }
+
+        // 上一页
+        function previousPage() {
+            if (currentPage > 1) {
+                currentPage--;
+                updatePageInfo();
+                scrollToPage(currentPage);
+            }
+        }
+
+        // 下一页
+        function nextPage() {
+            if (currentPage < totalPages) {
+                currentPage++;
+                updatePageInfo();
+                scrollToPage(currentPage);
+            }
+        }
+
+        // 滚动到指定页
+        function scrollToPage(pageNum) {
+            const pages = document.querySelectorAll('.pdf-page');
+            if (pages[pageNum - 1]) {
+                pages[pageNum - 1].scrollIntoView({ behavior: 'smooth', block: 'start' });
+            }
+        }
+
+        // 放大
+        function zoomIn() {
+            zoomLevel += 0.1;
+            updateZoomLevel();
+            renderAllPagesInBatches(); // 重新渲染所有页面
+        }
+
+        // 缩小
+        function zoomOut() {
+            if (zoomLevel > 0.5) {
+                zoomLevel -= 0.1;
+                updateZoomLevel();
+                renderAllPagesInBatches(); // 重新渲染所有页面
+            }
+        }
+
+        // 重置缩放
+        function resetZoom() {
+            zoomLevel = 1.5; // 保持较高的默认清晰度
+            updateZoomLevel();
+            renderAllPagesInBatches(); // 重新渲染所有页面
+        }
+
+        // 更新缩放级别显示
+        function updateZoomLevel() {
+            if (zoomLevelEl) {
+                zoomLevelEl.textContent = Math.round(zoomLevel * 100);
+            }
+        }
+
+        // 旋转页面
+        function rotate(angle) {
+            rotation += angle;
+            renderAllPagesInBatches(); // 重新渲染所有页面
+        }
+
+        // 下载PDF
+        function downloadPDF() {
+            if (pdfUrl) {
+                const link = document.createElement('a');
+                link.href = pdfUrl;
+                link.download = pdfFile.name;
+                link.click();
+            }
+        }
+
+        // 更新页面信息
+        function updatePageInfo() {
+            if (currentPageEl) currentPageEl.textContent = currentPage;
+            if (totalPagesEl) totalPagesEl.textContent = totalPages;
+            if (pageInput) {
+                pageInput.value = currentPage;
+                pageInput.max = totalPages;
+            }
+            
+            // 更新按钮状态
+            if (prevPageBtn) prevPageBtn.disabled = currentPage === 1;
+            if (nextPageBtn) nextPageBtn.disabled = currentPage === totalPages;
+        }
+        
+        // 跳转到指定页码
+        function goToPage() {
+            const pageNum = parseInt(pageInput.value);
+            if (!isNaN(pageNum) && pageNum >= 1 && pageNum <= totalPages) {
+                currentPage = pageNum;
+                updatePageInfo();
+                scrollToPage(currentPage);
+            } else {
+                pageInput.value = currentPage;
+            }
+        }
+        
+        // 搜索文本
+        function searchText(event) {
+            // 支持回车搜索
+            if (event && event.key !== 'Enter') {
+                return;
+            }
+            
+            const searchText = searchInput.value.trim();
+            if (!searchText) {
+                clearSearch();
+                return;
+            }
+            
+            searchTextValue = searchText;
+            searchResults = [];
+            currentSearchIndex = -1;
+            
+            // 开始搜索
+            searchInPages(searchText);
+        }
+        
+        // 在所有页面中搜索文本
+        function searchInPages(searchText) {
+            showLoading();
+            
+            let pagesProcessed = 0;
+            
+            for (let pageNum = 1; pageNum <= totalPages; pageNum++) {
+                searchInPage(pageNum, searchText, () => {
+                    pagesProcessed++;
+                    if (pagesProcessed === totalPages) {
+                        displaySearchResults();
+                        hideLoading();
+                    }
+                });
+            }
+        }
+        
+        // 在单页中搜索文本
+        function searchInPage(pageNum, searchText, callback) {
+            pdfDoc.getPage(pageNum).then(page => {
+                return page.getTextContent();
+            }).then(textContent => {
+                const text = textContent.items.map(item => item.str).join(' ');
+                const matches = [];
+                
+                let index = text.indexOf(searchText);
+                while (index !== -1) {
+                    matches.push({
+                        page: pageNum,
+                        index: index
+                    });
+                    index = text.indexOf(searchText, index + searchText.length);
+                }
+                
+                searchResults = searchResults.concat(matches);
+                callback();
+            }).catch(() => {
+                callback();
+            });
+        }
+        
+        // 显示搜索结果
+        function displaySearchResults() {
+            if (searchCountEl) {
+                if (searchResults.length === 0) {
+                    searchCountEl.textContent = `未找到匹配的文本: "${searchTextValue}"`;
+                } else {
+                    searchCountEl.textContent = `找到 ${searchResults.length} 个匹配项: "${searchTextValue}"`;
+                    currentSearchIndex = 0;
+                    goToSearchResult(0);
+                }
+            }
+            if (searchResultsEl) {
+                searchResultsEl.style.display = 'block';
+            }
+        }
+        
+        // 跳转到搜索结果
+        function goToSearchResult(index) {
+            if (searchResults.length === 0) return;
+            
+            const result = searchResults[index];
+            currentPage = result.page;
+            updatePageInfo();
+            scrollToPage(currentPage);
+            
+            // 更新当前搜索索引
+            currentSearchIndex = index;
+            
+            // 更新搜索按钮状态
+            prevMatchBtn.disabled = currentSearchIndex === 0;
+            nextMatchBtn.disabled = currentSearchIndex === searchResults.length - 1;
+        }
+        
+        // 上一个搜索结果
+        function previousMatch() {
+            if (currentSearchIndex > 0) {
+                goToSearchResult(currentSearchIndex - 1);
+            }
+        }
+        
+        // 下一个搜索结果
+        function nextMatch() {
+            if (currentSearchIndex < searchResults.length - 1) {
+                goToSearchResult(currentSearchIndex + 1);
+            }
+        }
+        
+        // 清除搜索
+        function clearSearch() {
+            searchResults = [];
+            currentSearchIndex = -1;
+            searchTextValue = '';
+            searchInput.value = '';
+            searchResultsEl.style.display = 'none';
+        }
+        
+        // 切换全屏模式
+        function toggleFullscreen() {
+            const container = document.querySelector('.container');
+            
+            if (!document.fullscreenElement) {
+                if (container.requestFullscreen) {
+                    container.requestFullscreen();
+                    if (fullscreenBtn) fullscreenBtn.textContent = '🖥️ 退出全屏';
+                } else if (container.webkitRequestFullscreen) {
+                    container.webkitRequestFullscreen();
+                    if (fullscreenBtn) fullscreenBtn.textContent = '🖥️ 退出全屏';
+                }
+            } else {
+                if (document.exitFullscreen) {
+                    document.exitFullscreen();
+                    if (fullscreenBtn) fullscreenBtn.textContent = '🖥️ 全屏';
+                } else if (document.webkitExitFullscreen) {
+                    document.webkitExitFullscreen();
+                    if (fullscreenBtn) fullscreenBtn.textContent = '🖥️ 全屏';
+                }
+            }
+        }
+
+        // 显示加载状态
+        function showLoading() {
+            if (loading && pdfViewer) {
+                loading.style.display = 'block';
+                pdfViewer.style.display = 'none';
+            }
+        }
+
+        // 隐藏加载状态
+        function hideLoading() {
+            if (loading) {
+                loading.style.display = 'none';
+            }
+        }
+
+        // 显示错误信息
+        function showError(message) {
+            if (error) {
+                error.textContent = message;
+                error.style.display = 'block';
+            }
+        }
+
+        // 隐藏错误信息
+        function hideError() {
+            if (error) {
+                error.style.display = 'none';
+            }
+        }
+
+        // 格式化文件大小
+        function formatFileSize(bytes) {
+            if (bytes === 0) return '0 Bytes';
+            const k = 1024;
+            const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+            const i = Math.floor(Math.log(bytes) / Math.log(k));
+            return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+        }
+
+        // 页面加载完成后初始化
+        document.addEventListener('DOMContentLoaded', init);
+    </script>
+</body>
+</html>

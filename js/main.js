@@ -77,23 +77,30 @@ class DocumentViewer {
             return;
         }
         
-        container.innerHTML = this.filteredDocuments.map(doc => `
-            <div class="document-card" data-id="${doc.id}" onclick="window.location.href='/document?id=${doc.id}'">
-                <div class="document-icon ${doc.type}">
-                    <i class="fas ${this.getDocumentIcon(doc.type)}"></i>
-                </div>
-                <div class="document-info">
-                    <h3 title="${doc.name}">${doc.name}</h3>
-                    <p>${this.formatFileSize(doc.size)}</p>
-                    <p>${this.formatDate(doc.uploadDate)}</p>
-                    <div class="document-actions">
-                        <button class="action-btn view-btn">
-                            <i class="fas fa-ellipsis-h"></i> 更多查看
-                        </button>
+        container.innerHTML = this.filteredDocuments.map(doc => {
+            // 根据文档类型决定点击事件
+            const onClickAction = doc.type === 'pdf' 
+                ? `window.location.href='/pdf-viewer-full.html?file=${encodeURIComponent(doc.filePath)}'` 
+                : `window.location.href='/document?id=${doc.id}'`;
+            
+            return `
+                <div class="document-card" data-id="${doc.id}" onclick="${onClickAction}">
+                    <div class="document-icon ${doc.type}">
+                        <i class="fas ${this.getDocumentIcon(doc.type)}"></i>
+                    </div>
+                    <div class="document-info">
+                        <h3 title="${doc.name}">${doc.name}</h3>
+                        <p>${this.formatFileSize(doc.size)}</p>
+                        <p>${this.formatDate(doc.uploadDate)}</p>
+                        <div class="document-actions">
+                            <button class="action-btn view-btn">
+                                <i class="fas fa-ellipsis-h"></i> 更多查看
+                            </button>
+                        </div>
                     </div>
                 </div>
-            </div>
-        `).join('');
+            `;
+        }).join('');
     }
 
     // 获取文档图标
@@ -102,6 +109,7 @@ class DocumentViewer {
             case 'ppt': return 'fa-file-powerpoint';
             case 'word': return 'fa-file-word';
             case 'excel': return 'fa-file-excel';
+            case 'pdf': return 'fa-file-pdf';
             default: return 'fa-file';
         }
     }
