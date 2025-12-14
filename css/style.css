@@ -665,7 +665,7 @@ main {
 
 .viewer-container {
     width: 100%;
-    height: 500px; /* 缩小展示框高度 */
+    height: 800px; /* 增加展示框高度，为文档预留更多空间 */
     display: flex;
     align-items: center;
     justify-content: center;
@@ -679,14 +679,14 @@ main {
     max-width: 100%;
     resize: vertical; /* 允许垂直调整大小 */
     padding: 0;
-    min-height: 400px;
+    min-height: 600px; /* 增加最小高度 */
     transition: all var(--transition-normal);
     scroll-behavior: smooth; /* 添加平滑滚动 */
 }
 
 .viewer-container iframe {
     width: 100%;
-    height: 500px; /* 缩小iframe高度，与容器匹配 */
+    height: 800px; /* 增加iframe高度，与容器匹配 */
     border: none;
     display: block;
     transition: all var(--transition-normal);
@@ -699,7 +699,7 @@ main {
 
 /* 优化Office Online嵌入内容的显示 */
 .viewer-container iframe[src*="officeapps.live.com"] {
-    min-height: 500px;
+    min-height: 800px; /* 增加Office文档的最小高度 */
     height: 100%;
     width: 100%;
     max-width: 100%;
@@ -711,7 +711,7 @@ main {
 .document-viewer {
     margin: 1.5rem 0;
     position: relative;
-    min-height: 500px;
+    min-height: 800px; /* 增加文档查看器区域的最小高度 */
     width: 100%;
 }
 
