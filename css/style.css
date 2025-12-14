@@ -682,57 +682,6 @@ main {
     min-height: 400px;
     transition: all var(--transition-normal);
     scroll-behavior: smooth; /* 添加平滑滚动 */
-    /* 增强滚动条可见性 */
-    scrollbar-width: auto;
-    scrollbar-color: var(--primary-color) var(--bg-secondary);
-}
-
-/* Webkit浏览器自定义滚动条 */
-.viewer-container::-webkit-scrollbar {
-    width: 12px;
-    height: 12px;
-}
-
-.viewer-container::-webkit-scrollbar-track {
-    background: var(--bg-secondary);
-    border-radius: 6px;
-}
-
-.viewer-container::-webkit-scrollbar-thumb {
-    background-color: var(--primary-color);
-    border-radius: 6px;
-    border: 3px solid var(--bg-secondary);
-    transition: all var(--transition-normal);
-}
-
-.viewer-container::-webkit-scrollbar-thumb:hover {
-    background-color: var(--primary-dark);
-    transform: scale(1.05);
-}
-
-/* 滚动条角落 */
-.viewer-container::-webkit-scrollbar-corner {
-    background: var(--bg-secondary);
-    border-radius: 6px;
-}
-
-/* 添加滚动提示 */
-.viewer-container::before {
-    content: '';
-    position: absolute;
-    right: 0;
-    top: 0;
-    bottom: 0;
-    width: 3px;
-    background: linear-gradient(to bottom, transparent, var(--primary-color), transparent);
-    opacity: 0.3;
-    transition: opacity var(--transition-normal);
-    pointer-events: none;
-    z-index: 10;
-}
-
-.viewer-container:hover::before {
-    opacity: 0.6;
 }
 
 .viewer-container iframe {
